@@ -1,5 +1,8 @@
 import CourseModel from "../models/Course";
 import InstructorModel from "../models/Instructor";
+import { GraphQLContext } from "./context";
+import mongoose from "mongoose";
+import { BadUserInputError, NotFoundError } from "./errors";
 
 type CourseArgs = {
   id: string;
@@ -11,12 +14,23 @@ type CourseParent = {
 
 const resolvers = {
   Query: {
-    course: async (_parent: unknown, args: CourseArgs) => {
-      const course = await CourseModel.findById(args.id);
+  course: async (_parent: unknown, args: CourseArgs) => {
+  console.log("COURSE RESOLVER RUNNING");
+  console.log("ID:", args.id);
+  console.log("VALID:", mongoose.isValidObjectId(args.id));
 
-      return course;
-    },
+  if (!mongoose.isValidObjectId(args.id)) {
+     throw new BadUserInputError("Invalid course ID");
+  }
 
+  const course = await CourseModel.findById(args.id);
+
+  if (!course) {
+     throw new NotFoundError ("Invalid course ID");
+  }
+
+  return course;
+},
     courses: async () => {
       const courses = await CourseModel.find();
 
@@ -31,17 +45,12 @@ const resolvers = {
   },
 
   Course: {
-    instructor: async (parent: CourseParent) => {
-      console.log(
-        "Fetching instructor:",
-        parent.instructorId.toString()
-      );
-
-      const instructor = await InstructorModel.findById(
-        parent.instructorId
-      );
-
-      return instructor;
+    instructor: (
+      parent: CourseParent,
+      _args: unknown,
+      context: GraphQLContext
+    ) => {
+      return context.instructorLoader.load(parent.instructorId);
     },
   },
 };

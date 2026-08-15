@@ -4,6 +4,7 @@ import { expressMiddleware } from "@as-integrations/express5";
 import connectDB from "./config/db";
 import typeDefs from "./graphql/typeDefs.js";
 import resolvers from "./graphql/resolvers.js";
+import { createContext } from "./graphql/context.js";
 
 const app = express();
 const PORT = 4000;
@@ -11,10 +12,36 @@ const PORT = 4000;
 const graphqlServer = new ApolloServer({
   typeDefs,
   resolvers,
+  formatError: (formattedError) => {
+    
+  const code = formattedError.extensions?.code;
+
+  const knownErrors = [
+    "BAD_USER_INPUT",
+    "COURSE_NOT_FOUND",
+  ];
+
+  if (knownErrors.includes(code as string)) {
+    return {
+      message: formattedError.message,
+      path: formattedError.path,
+      extensions: {
+        code,
+      },
+    };
+  }
+
+  return {
+    message: "Internal server error",
+    path: formattedError.path,
+    extensions: {
+      code: "INTERNAL_SERVER_ERROR",
+    },
+  };
+},
 });
 
 async function startServer() {
-  // 🔑 DB connect ab yahan andar hai, isliye .catch() isko bhi pakdega
   await connectDB();
 
   await graphqlServer.start();
@@ -22,7 +49,9 @@ async function startServer() {
   app.use(
     "/graphql",
     express.json(),
-    expressMiddleware(graphqlServer)
+    expressMiddleware(graphqlServer, {
+      context: createContext,
+    })
   );
 
   app.listen(PORT, () => {
