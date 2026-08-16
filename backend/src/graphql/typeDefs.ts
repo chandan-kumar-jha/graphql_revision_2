@@ -1,46 +1,68 @@
 const typeDefs = `#graphql
-type Instructor {
-  id: ID!
-  name: String!
-  email: String!
-}
 
-type Course {
-  id: ID!
-  title: String!
-  description: String!
-  instructor: Instructor
-}
+  type Instructor {
+    id: ID!
+    name: String!
+    email: String!
+  }
 
-type PageInfo {
-  hasNextPage: Boolean!
-  hasPreviousPage: Boolean!
-  startCursor: String
-  endCursor: String
-}
+  type Course {
+    id: ID!
+    title: String!
+    description: String!
+    instructor: Instructor
+  }
 
-type CourseEdge {
-  node: Course!
-  cursor: String!
-}
+  type PageInfo {
+    hasNextPage: Boolean!
+    hasPreviousPage: Boolean!
+    startCursor: String
+    endCursor: String
+  }
 
-type CourseConnection {
-  edges: [CourseEdge!]!
-  pageInfo: PageInfo!
-}
+  type CourseEdge {
+    node: Course!
+    cursor: String!
+  }
 
-type Query {
-  courses(
-    first: Int
-    after: String
-    last: Int
-    before: String
-  ): CourseConnection!
+  type CourseConnection {
+    edges: [CourseEdge!]!
+    pageInfo: PageInfo!
+  }
 
-  course(id: ID!): Course
+  input CourseFilterInput {
+    title: String
+    instructorId: ID
+  }
 
-  instructors: [Instructor!]!
-}
+  enum CourseSortBy {
+    TITLE
+    ID
+  }
+
+  enum SortOrder {
+    ASC
+    DESC
+  }
+
+  type Query {
+    courses(
+      search: String
+      filter: CourseFilterInput
+
+      sortBy: CourseSortBy
+      sortOrder: SortOrder
+
+      first: Int
+      after: String
+      last: Int
+      before: String
+    ): CourseConnection!
+
+    course(id: ID!): Course
+
+    instructors: [Instructor!]!
+  }
 `;
 
 export default typeDefs;
